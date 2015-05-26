@@ -45,7 +45,7 @@ public abstract class MobileAnimatedActor
 	   Point cur = goal;
 	   while (cur.x != start.x && cur.y != start.y){
 		   int x = grid.get_cell(cur).came_from().x;
-		   int y = grid.get_cell(cur).came_from().x;
+		   int y = grid.get_cell(cur).came_from().y;
 		   cur = new Point(x, y);
 		   
 		   path.add(cur);
@@ -54,7 +54,7 @@ public abstract class MobileAnimatedActor
 	   return path;
    }
    
-   public ArrayList<Point> neighbors(WorldModel world, Point p){
+   public ArrayList<Point> neighbors(WorldModel world, Point p, Point goal){
 	   Point left = new Point(p.x - 1, p.y);
 	   Point right = new Point(p.x + 1, p.y);
 	   Point up = new Point(p.x, p.y - 1);                    //Is - upwards?
@@ -75,6 +75,19 @@ public abstract class MobileAnimatedActor
 		   n.add(down);
 	   }
 	   
+	   if (left.x == goal.x && left.y == goal.y){
+		   n.add(left);
+	   }
+	   if (right.x == goal.x && right.y == goal.y){
+		   n.add(right);
+	   }
+	   if (up.x == goal.x && up.y == goal.y){
+		   n.add(up);
+	   }
+	   if (down.x == goal.x && down.y == goal.y){
+		   n.add(down);
+	   }
+	   
 	   return n;
    }
    
@@ -85,7 +98,7 @@ public abstract class MobileAnimatedActor
 	   ArrayList<Point> openset = new ArrayList<Point>();
 	   openset.add(start);
 	   Point came_from = start;
-	   System.out.print("Starting point: x = ");
+	   System.out.print("Start: x = ");
 	   System.out.print(start.x);
 	   System.out.print(" y = ");
 	   System.out.println(start.y);
@@ -116,7 +129,7 @@ public abstract class MobileAnimatedActor
 		   
 //5: Checks to see if current is at the goal
 		   if (current.x == goal.x && current.y == goal.y){
-			   System.out.print("Found the goal, returning path");
+			   System.out.println("Found the goal, returning path");
 			   
 //Final step: reconstructs and returns the path based on the a_star grid's came_from value
 			   for(Point p : reconstruct_path(grid, start, goal)){
@@ -135,15 +148,17 @@ public abstract class MobileAnimatedActor
 //6: Moves the current node from openset to closedset; marked
 		   openset.remove(current);
 		   closedset.add(current);
+		   /*
 		   System.out.print("Node removed from openset: x = ");
 		   System.out.print(current.x);
 		   System.out.print(" y = ");
 		   System.out.print(current.y);
 		   System.out.print(";  f value: ");
 		   System.out.println(get_F(current, grid));
+		   */
 		   
 //7: Steps through each neighbor of current
-		   for (Point n : neighbors(world, current)){
+		   for (Point n : neighbors(world, current, goal)){
 			   boolean closedBool = false;
 			   
 //8: If any of the neighbors are in the closed set, skip them

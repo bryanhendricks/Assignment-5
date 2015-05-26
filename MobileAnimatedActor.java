@@ -36,8 +36,8 @@ public abstract class MobileAnimatedActor
 	   return x_val + y_val;
    }
    
-   public int get_F(Point start, Point current, Point end){
-	   return get_Dist(start, current) + get_Dist(current, end);
+   public int get_F(Point pt, AStarGrid grid){
+	   return grid.get_cell(pt).get_f();
    }
    
    public ArrayList<Point> reconstruct_path(AStarGrid grid, Point start, Point goal){
@@ -97,16 +97,15 @@ public abstract class MobileAnimatedActor
 	   //System.out.print(world.getNumRows());
 	   //System.out.print(", getNumCols = ");
 	   //System.out.println(world.getNumCols());
-	   AStarGrid grid = new AStarGrid(world.getNumRows(), world.getNumCols());
+	   AStarGrid grid = new AStarGrid(world.getNumCols(), world.getNumRows());
+	   grid.set_cell(start.y, start.x, new AStar(0, get_Dist(start, goal), null));
 	   while (openset.size() != 0){
 		   int lowestF = 0;
 		   int i = 0;
-		   //System.out.print("Restarting while loop. openset.size = ");
-		   //System.out.println(openset.size());         //This throws an error; why?
 		   
 //3: Steps through openset, finding the one with the lowest F
 		   for (Point p : openset){
-			   if (get_F(start, p, goal) < get_F(start, openset.get(lowestF), goal)){
+			   if (get_F(p, grid) < get_F(openset.get(lowestF), grid)){
 				   lowestF = i;
 			   }
 			   i++;
@@ -119,7 +118,7 @@ public abstract class MobileAnimatedActor
 		   if (current.x == goal.x && current.y == goal.y){
 			   System.out.print("Found the goal, returning path");
 			   
-//Final step: recontructs and returns the path based on the a_star grid's came_from value
+//Final step: reconstructs and returns the path based on the a_star grid's came_from value
 			   for(Point p : reconstruct_path(grid, start, goal)){
 				   System.out.print("x = ");
 				   System.out.print(p.x);
@@ -141,14 +140,10 @@ public abstract class MobileAnimatedActor
 		   System.out.print(" y = ");
 		   System.out.print(current.y);
 		   System.out.print(";  f value: ");
-		   System.out.println(get_F(start, current, goal));
+		   System.out.println(get_F(current, grid));
 		   
 //7: Steps through each neighbor of current
 		   for (Point n : neighbors(world, current)){
-			   //System.out.println("Stepping through neighbors");
-			   if (n.x == goal.x && n.y == goal.y){
-				   System.out.println("Neighbor is a goal");
-			   }
 			   boolean closedBool = false;
 			   
 //8: If any of the neighbors are in the closed set, skip them
@@ -158,19 +153,23 @@ public abstract class MobileAnimatedActor
 				   }
 			   }
 			   if (closedBool == true){
-				   //System.out.println("All neighbors were in the closed set - skipping");
+				   //System.out.println("Neighbor was in the closed set - skipping");
 				   continue;
 			   }
 			   //System.out.println("Some/all neighbors valid - continuing");
 			   
+			   AStar currentAstar = grid.get_cell(current);
+			   grid.set_cell(n.y, n.x, new AStar(currentAstar.get_g() + 1,
+					   get_Dist(current, goal), current));
+			   
 //9: Calculates tentative g_score of the current node
-			   int tentative_g = get_Dist(start, current) + 1;      //dist between current and neighbor should be 1, right?
+			   int tentative_g = grid.get_cell(current).get_g() + 1;
 			   //int tentative_g = get_Dist(start, current) + get_Dist(current, n);
 			   //System.out.print("Neighbor's g_score = ");
 			   //System.out.println(tentative_g);
 			   
 //10: If the tentative g_score is less than the g_score of the neighbor
-			   if (closedBool == false || tentative_g < get_Dist(start, n)){
+			   if (closedBool == false || tentative_g < grid.get_cell(n).get_g()){
 				   
 //11: Set the came_from node to the neighbor with the smaller g_score
 				   came_from = current;
@@ -180,7 +179,7 @@ public abstract class MobileAnimatedActor
 				   //System.out.print(n.x);
 				   //System.out.print(" y = ");
 				   //System.out.println(n.y);
-				   grid.set_cell(n.x, n.y, new AStar(get_Dist(start, n), get_Dist(n, goal), came_from));
+				   grid.set_cell(n.y, n.x, new AStar(get_Dist(start, n), get_Dist(n, goal), came_from));
 				   
 //13: If the neighbor isn't in the openset, add them to it
 				   int neighborVal = 0;

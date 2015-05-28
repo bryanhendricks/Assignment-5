@@ -19,10 +19,11 @@ public class WorldView
       this.viewport = new Viewport(numRows, numCols);
    }
 
-   public void drawViewport()
+   public Viewport drawViewport()
    {
       drawBackground();
       drawEntities();
+      return viewport;
    }
 
    private void drawBackground()

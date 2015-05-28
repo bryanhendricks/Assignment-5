@@ -1,3 +1,4 @@
+import processing.core.PApplet;
 import processing.core.PImage;
 
 import java.util.Collections;
@@ -11,10 +12,24 @@ import java.lang.Math;
 public abstract class MobileAnimatedActor
    extends AnimatedActor
 {
+	private ArrayList<Point> aPath;
+	private ArrayList<Point> aChecked;
    public MobileAnimatedActor(String name, Point position, int rate,
       int animation_rate, List<PImage> imgs)
    {
       super(name, position, rate, animation_rate, imgs);
+      aPath = new ArrayList<Point>();
+      aChecked = new ArrayList<Point>();
+   }
+   public ArrayList<Point> get_path(){
+	   return aPath;
+   }
+   public ArrayList<Point> get_checked(){
+	   return aChecked;
+   }
+   public void resetPaths(){
+	   aPath = new ArrayList<Point>();
+	   aChecked = new ArrayList<Point>();
    }
    
    
@@ -43,11 +58,12 @@ public abstract class MobileAnimatedActor
    public ArrayList<Point> reconstruct_path(AStarGrid grid, Point start, Point goal){
 	   ArrayList<Point> path = new ArrayList<Point>();
 	   Point cur = goal;
-	   while (cur.x != start.x && cur.y != start.y){
+	   path.add(goal);
+	   while (cur.x != start.x || cur.y != start.y){
 		   int x = grid.get_cell(cur).came_from().x;
 		   int y = grid.get_cell(cur).came_from().y;
 		   cur = new Point(x, y);
-		   
+		   aPath.add(cur);
 		   path.add(cur);
 	   }
 	   
@@ -97,21 +113,9 @@ public abstract class MobileAnimatedActor
 	   ArrayList<Point> closedset = new ArrayList<Point>();
 	   ArrayList<Point> openset = new ArrayList<Point>();
 	   openset.add(start);
-	   Point came_from = start;
-	   System.out.print("Start: x = ");
-	   System.out.print(start.x);
-	   System.out.print(" y = ");
-	   System.out.println(start.y);
-	   System.out.print("Goal: x = ");
-	   System.out.print(goal.x);
-	   System.out.print(" y = ");
-	   System.out.println(goal.y);
-	   //System.out.print("World.getNumRows = ");
-	   //System.out.print(world.getNumRows());
-	   //System.out.print(", getNumCols = ");
-	   //System.out.println(world.getNumCols());
+	   Point came_from = null;
 	   AStarGrid grid = new AStarGrid(world.getNumCols(), world.getNumRows());
-	   grid.set_cell(start.y, start.x, new AStar(0, get_Dist(start, goal), null));
+	   grid.set_cell(start.y, start.x, new AStar(0, get_Dist(start, goal), start));
 	   while (openset.size() != 0){
 		   int lowestF = 0;
 		   int i = 0;
@@ -129,9 +133,9 @@ public abstract class MobileAnimatedActor
 		   
 //5: Checks to see if current is at the goal
 		   if (current.x == goal.x && current.y == goal.y){
-			   System.out.println("Found the goal, returning path");
 			   
 //Final step: reconstructs and returns the path based on the a_star grid's came_from value
+			   /*
 			   for(Point p : reconstruct_path(grid, start, goal)){
 				   System.out.print("x = ");
 				   System.out.print(p.x);
@@ -142,21 +146,16 @@ public abstract class MobileAnimatedActor
 			   System.out.println("");
 			   System.out.println("");
 			   System.out.println("");
+			   */
 			   return reconstruct_path(grid, start, goal);
 		   }
 
 //6: Moves the current node from openset to closedset; marked
 		   openset.remove(current);
 		   closedset.add(current);
-		   /*
-		   System.out.print("Node removed from openset: x = ");
-		   System.out.print(current.x);
-		   System.out.print(" y = ");
-		   System.out.print(current.y);
-		   System.out.print(";  f value: ");
-		   System.out.println(get_F(current, grid));
-		   */
-		   
+		   aChecked.add(current);
+			   
+			   
 //7: Steps through each neighbor of current
 		   for (Point n : neighbors(world, current, goal)){
 			   boolean closedBool = false;
@@ -168,35 +167,23 @@ public abstract class MobileAnimatedActor
 				   }
 			   }
 			   if (closedBool == true){
-				   //System.out.println("Neighbor was in the closed set - skipping");
 				   continue;
 			   }
-			   //System.out.println("Some/all neighbors valid - continuing");
 			   
-			   AStar currentAstar = grid.get_cell(current);
-			   grid.set_cell(n.y, n.x, new AStar(currentAstar.get_g() + 1,
-					   get_Dist(current, goal), current));
+			   grid.set_cell(n.y, n.x, new AStar(grid.get_cell(current).get_g() + 1,
+					   get_Dist(n, goal), null));
 			   
 //9: Calculates tentative g_score of the current node
 			   int tentative_g = grid.get_cell(current).get_g() + 1;
-			   //int tentative_g = get_Dist(start, current) + get_Dist(current, n);
-			   //System.out.print("Neighbor's g_score = ");
-			   //System.out.println(tentative_g);
 			   
 //10: If the tentative g_score is less than the g_score of the neighbor
 			   if (closedBool == false || tentative_g < grid.get_cell(n).get_g()){
 				   
-//11: Set the came_from node to the neighbor with the smaller g_score
-				   came_from = current;
+//11: Set the cell in the a_star grid at the neighbor node, with a came_from value of current
+				   grid.set_cell(n.y, n.x, new AStar(grid.get_cell(current).get_g() + 1,
+						   get_Dist(n, goal), current));
 				   
-//12: Set the cell in the a_star grid at the neighbor node, with a came_from value of current
-				   //System.out.print("Setting grid cell: x = ");
-				   //System.out.print(n.x);
-				   //System.out.print(" y = ");
-				   //System.out.println(n.y);
-				   grid.set_cell(n.y, n.x, new AStar(get_Dist(start, n), get_Dist(n, goal), came_from));
-				   
-//13: If the neighbor isn't in the openset, add them to it
+//12: If the neighbor isn't in the openset, add them to it
 				   int neighborVal = 0;
 				   for (Point o : openset){
 					   if (n.x == o.x && n.y == o.y){
@@ -205,12 +192,6 @@ public abstract class MobileAnimatedActor
 				   }
 				   if (neighborVal == 0){
 					   openset.add(n);
-					   /*
-					   System.out.print("Adding neighbor to openset: x = ");
-					   System.out.print(n.x);
-					   System.out.print(" y = ");
-					   System.out.println(n.y);
-					   */
 				   }
 			   }
 		   }
@@ -221,37 +202,18 @@ public abstract class MobileAnimatedActor
 
    protected Point nextPosition(WorldModel world, Point dest_pt)
    {
-	  //This is where the movement next point decision comes from
-	   
 //1: Run a_Star, giving it the entity's position, destination point, and worldmodel
 	   ArrayList<Point> path = a_Star(getPosition(), dest_pt, world);
-	   int i = path.size() - 1;
+	   if (path.size() == 2){
+		   return path.get(1);
+	   }
+	   if (path.size() == 1){
+		   return dest_pt;
+	   }
+	   
+	   int i = path.size() - 2;
 
 	   return path.get(i);
-	   
-	   
-	   
-	   
-	   
-	   
-	   
-/*
-      int horiz = Integer.signum(dest_pt.x - getPosition().x);
-      Point new_pt = new Point(getPosition().x + horiz, getPosition().y);
-
-      if (horiz == 0 || !canPassThrough(world, new_pt))
-      {
-         int vert = Integer.signum(dest_pt.y - getPosition().y);
-         new_pt = new Point(getPosition().x, getPosition().y + vert);
-
-         if (vert == 0 || !canPassThrough(world, new_pt))
-         {
-            new_pt = getPosition();
-         }
-      }
-
-      return new_pt;
-*/
    }
 
    protected static boolean adjacent(Point p1, Point p2)

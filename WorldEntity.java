@@ -1,4 +1,7 @@
+import processing.core.PApplet;
 import processing.core.PImage;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class WorldEntity
@@ -26,5 +29,16 @@ public class WorldEntity
    {
       world.removeEntity(this);
    }
+
+   public ArrayList<Point> get_checked() {
+		return new ArrayList<Point>();
+   }
+   public ArrayList<Point> get_path() {
+		return new ArrayList<Point>();
+   }
+   public void resetPaths(){
+	   //Do nothing
+   }
+   
 
 }

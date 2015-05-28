@@ -1,4 +1,6 @@
 import processing.core.*;
+
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,10 +31,19 @@ public class Main extends PApplet
    private long next_time;
    private WorldModel world;
    private WorldView view;
+   
+   private PImage path;
+   private PImage checked;
+   
+   private int drawCounter;
 
 
    public void setup()
    {
+	   checked = loadImage("visited.png");
+       path = loadImage("path.png");
+	   
+	   
       size(SCREEN_WIDTH, SCREEN_HEIGHT);
       imageStore = new ImageStore(
          createImageColored(TILE_WIDTH, TILE_HEIGHT, DEFAULT_IMAGE_COLOR));
@@ -59,10 +70,14 @@ public class Main extends PApplet
       // update view?
 
       next_time = System.currentTimeMillis() + TIMER_ACTION_DELAY;
+      
+      drawCounter = 0;
    }
+   
 
    public void draw()
    {
+	   ArrayList<Point> pathList = new ArrayList<Point>();
       long time = System.currentTimeMillis();
       if (time >= next_time)
       {
@@ -70,7 +85,32 @@ public class Main extends PApplet
          next_time = time + TIMER_ACTION_DELAY;
       }
 
-      view.drawViewport();
+      Viewport viewport = view.drawViewport();
+      
+      
+      
+      for (WorldEntity e : world.getEntities()){
+    	  if (e instanceof MobileAnimatedActor){
+    		  for (Point p : e.get_checked()){
+    			  if (viewport.contains(p)){
+    				  image(checked, (p.x - viewport.getCol()) * 32, (p.y - viewport.getRow()) * 32);
+    			  }
+    	      }
+    		  for (Point p : e.get_path()){
+    			  if (viewport.contains(p)){
+    				  image(path, (p.x - viewport.getCol()) * 32, (p.y - viewport.getRow()) * 32);
+    			  }
+    	      }
+    		  if (e.get_checked().size() != 0){
+    			  drawCounter++;
+    		  }
+    		  if (drawCounter > 10){
+    			  e.resetPaths();
+    			  drawCounter = 0;
+    		  }
+    	  }
+      }
+      
    }
 
    public void keyPressed()
